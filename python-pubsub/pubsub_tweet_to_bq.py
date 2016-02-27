@@ -40,7 +40,7 @@ def bq_init_tweets(project_name, table_name, force_delete = False):
     created = client_bq.create_table(dataset_name, table_name, schema)
     print("Table {}:{} created".format(dataset_name, table_name))
 
-def bq_store_cb(messages, dataset_name, table_name):
+def bq_store_cb(messages, client_bq, dataset_name, table_name):
     def tweet_author_name(tweet):
         return tweet.author.screen_name if tweet.author else ''
 
@@ -86,7 +86,7 @@ def bq_store_tweets(client, project_name, topic, table_name):
     create_subscription(client, project_name, topic, subscription, ack_deadline = 60)
 
     try:
-        pull_messages_cb(client, project_name, subscription, bq_store_cb, [dataset_name, table_name])
+        pull_messages_cb(client, project_name, subscription, bq_store_cb, [client_bq, dataset_name, table_name])
     finally:
         delete_subscription(client, project_name, subscription)
 

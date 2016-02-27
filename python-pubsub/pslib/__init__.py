@@ -197,7 +197,7 @@ def pull_messages_cb(client, project_name, subscription, callback, cb_args = [],
             for receivedMessage in receivedMessages:
                 message = receivedMessage.get('message')
                 if message:
-                    messages.append(message)
+                    messages.append(base64.b64decode(str(message.get('data'))))
                     ack_ids.append(receivedMessage.get('ackId'))
             callback(messages, *cb_args)
             ack_body = {'ackIds': ack_ids}
