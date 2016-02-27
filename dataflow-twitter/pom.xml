@@ -15,6 +15,15 @@
     <spark.version>1.5.2</spark.version>
     <flink.version>0.10.2</flink.version>
     <google-cloud-dataflow-version>1.0.0</google-cloud-dataflow-version>
+
+    <mainClass>com.shopkick.data.dataflow.TwitterDataflow</mainClass>
+    <input>tweets</input>
+    <output>entities_count</output>
+    <zookeeper>localhost:2181</zookeeper>
+    <kafkaBroker>localhost:9092</kafkaBroker>
+    <kafkaGroup>tweetsGroup</kafkaGroup>
+    <windowSize>600</windowSize>
+    <windowSlide>10</windowSlide>
   </properties>
 
   <repositories>
@@ -186,6 +195,11 @@
             <argument>${mainClass}</argument>
             <argument>--input=${input}</argument>
             <argument>--output=${output}</argument>
+            <argument>--zookeeper=${zookeeper}</argument>
+            <argument>--kafkaBroker=${kafkaBroker}</argument>
+            <argument>--kafkaGroup=${kafkaGroup}</argument>
+            <argument>--windowSize=${windowSize}</argument>
+            <argument>--windowSlide=${windowSlide}</argument>
           </arguments>
         </configuration>
       </plugin>

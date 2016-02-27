@@ -218,7 +218,7 @@ public class TwitterDataflowSpark {
     public void processElement(ProcessContext c) {
     // public String apply(KV<String, Long> input) {
       // String text = c.element().getKey() + ": " + c.element().getValue() + " - " + ((IntervalWindow)c.window()).start();
-      String text = c.element().getKey() + ": " + c.element().getValue();
+      String text = c.element().getKey() + "," + c.element().getValue();
       c.output(text);
     }
   }
