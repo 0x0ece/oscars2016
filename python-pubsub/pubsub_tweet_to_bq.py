@@ -124,7 +124,7 @@ def main(argv):
         bq_init_tweets(args.project_name, args.table_name, args.force)
     elif args.func == 'run':
         client = create_pubsub_client()
-        bq_store_tweets(client, args.project_name, args.topic, args.table_name):
+        bq_store_tweets(client, args.project_name, args.topic, args.table_name)
 
 if __name__ == '__main__':
     main(sys.argv)
