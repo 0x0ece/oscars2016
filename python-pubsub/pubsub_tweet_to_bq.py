@@ -78,7 +78,7 @@ def bq_store_cb(messages, dataset_name, table_name):
         'OK' if n_msg==n_rows else '!!', n_msg, n_rows)
 
 def bq_store_tweets(client, project_name, topic, table_name):
-    dataset_name, table_name = table_name
+    dataset_name, table_name = table_name.split(':')
     client_bq = create_bq_client(project_name)
 
     uid = uuid.uuid4().get_hex()
