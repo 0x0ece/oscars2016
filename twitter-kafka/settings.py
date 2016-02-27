@@ -1,7 +1,7 @@
 # Config
 KAFKA_HOST = "127.0.0.1:9092"
 KAFKA_TOPIC = "tweets"
-TWITTER_TRACK = ["#oscars2016", "#oscars", "#redcarpet", "#oscar2016", "#oscar"]
+TWITTER_TRACK = ["#oscars2016", "#oscars", "#redcarpet", "#oscar2016", "#oscar", "#oscarsdata"]
 
 # Twitter secrets
 # CONSUMER_KEY = ""
