@@ -80,7 +80,7 @@ def main(argv):
     client = create_pubsub_client()
 
     args = parser.parse_args(argv[1:])
-    twitter_stream(client, args.project_name, args.topic, args.track_list)
+    twitter_stream(client, args.project_name, args.topic_name, args.track_list)
 
 if __name__ == '__main__':
     main(sys.argv)
