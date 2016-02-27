@@ -34,7 +34,6 @@ import com.google.cloud.dataflow.sdk.values.PDone;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer082;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
-import org.apache.flink.streaming.util.serialization.JavaDefaultStringSchema;
 
 import java.util.Properties;
 
@@ -208,15 +207,16 @@ public class TwitterDataflow {
       new SimpleStringSchema(), kafkaProps);
 
     // Flink producer that writes to a Kafka topic
+    // Note: this requires KafkaIO, check out https://github.com/ecesena/flink-dataflow
+    // or use TextIO as in the comment below
     FlinkKafkaProducer<String> kafkaProducer = new FlinkKafkaProducer<String>(
       options.getOutput(),
-      new JavaDefaultStringSchema(), kafkaProps, null);
-
-    // This requires KafkaIO, check out https://github.com/ecesena/flink-dataflow
-    // or use TextIO as in the comment below
+      new StringToBytesSchema(), kafkaProps);
     PTransform<PCollection<String>, PDone> outputFn =
         new KafkaIO.Write.Bound<String>("WriteEntityCounts", kafkaProducer);
-        // TextIO.Write.named("WriteEntityCounts").to(options.getOutput());
+
+    // PTransform<PCollection<String>, PDone> outputFn =
+    //     TextIO.Write.named("WriteEntityCounts").to(options.getOutput());
 
     pipeline
       .apply("Input", Read.named("ReadTweets").from(new UnboundedFlinkSource<String, UnboundedSource.CheckpointMark>(options, kafkaConsumer)).named("StreamingTweets"))
