@@ -193,7 +193,7 @@ class StreamWatcherListener(tweepy.StreamListener):
                 {
                     'data': base64.urlsafe_b64encode(q),
                     'attributes': {'timestamp_ms': timestamp_ms}
-                } for q in self.queue
+                } for q,timestamp_ms in self.queue
             ]
         }
         self.client.topics().publishBatch(body=body).execute(num_retries=NUM_RETRIES)
