@@ -9,9 +9,10 @@ import argparse
 
 class StreamWatcherListener(tweepy.StreamListener):
 
-    def __init__(self, api=None, client=None, topic=None):
+    def __init__(self, api=None, client=None, project = None topic=None):
         super(StreamWatcherListener, self).__init__(api)
         self.client = client
+        self.project = project
         self.topic = topic
 
         self.queue = []
@@ -21,16 +22,13 @@ class StreamWatcherListener(tweepy.StreamListener):
         self.queue.append( (item.encode('utf-8'), timestamp_ms) )
 
     def _send(self):
-        body = {
-            'topic': self.topic,
-            'messages': [
+        messages = [
                 {
                     'data': base64.urlsafe_b64encode(q),
                     'attributes': {'timestamp_ms': timestamp_ms}
                 } for q,timestamp_ms in self.queue
             ]
-        }
-        self.client.topics().publishBatch(body=body).execute(num_retries=NUM_RETRIES)
+        publish_message_batch(self.client, self.project, self.topic, messages)
         self.last_sent = time.time()
         self.queue = []
 
@@ -61,7 +59,7 @@ def twitter_stream(client, project_name, topic, track_list):
         twitter_cred = json.load(f)
     auth = tweepy.auth.OAuthHandler(twitter_cred['consumer_key'], twitter_cred['consumer_secret'])
     auth.set_access_token(twitter_cred['access_token'], twitter_cred['access_token_secret'])
-    watcher = StreamWatcherListener(client=client, topic=topic)
+    watcher = StreamWatcherListener(client=client, project=project_name, topic=topic)
     stream = tweepy.Stream(auth, watcher, timeout=None)
 
     track_list = [k for k in track_list.split(',')]

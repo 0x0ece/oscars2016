@@ -131,6 +131,15 @@ def publish_message(client, project_name, topic, message):
         topic=topic, body=body).execute(num_retries=NUM_RETRIES)
     return resp
 
+def publish_message_batch(client, project_name, topic, messages):
+    """Publish a list of messages to a given topic."""
+    topic = get_full_topic_name(project_name, topic)
+    message = base64.b64encode(str(message))
+    body = {'messages': messages}
+    resp = client.projects().topics().publish(
+        topic=topic, body=body).execute(num_retries=NUM_RETRIES)
+    return resp
+
 def pull_messages(client, project_name, subscription, no_loop = False):
     """Pull messages from a given subscription."""
     subscription = get_full_subscription_name(
