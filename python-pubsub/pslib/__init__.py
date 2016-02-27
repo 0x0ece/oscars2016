@@ -188,7 +188,7 @@ def pull_messages_cb(client, project_name, subscription, callback, cb_args = [],
                     num_retries=NUM_RETRIES)
         except Exception as e:
             time.sleep(0.5)
-            yield e
+            print e
             continue
         receivedMessages = resp.get('receivedMessages')
         if receivedMessages:
