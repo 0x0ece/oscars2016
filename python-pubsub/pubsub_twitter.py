@@ -9,7 +9,7 @@ import argparse
 
 class StreamWatcherListener(tweepy.StreamListener):
 
-    def __init__(self, api=None, client=None, project = None topic=None):
+    def __init__(self, api=None, client=None, project = None, topic=None):
         super(StreamWatcherListener, self).__init__(api)
         self.client = client
         self.project = project
