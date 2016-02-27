@@ -51,8 +51,6 @@ class StreamWatcherListener(tweepy.StreamListener):
 
 def twitter_stream(client, project_name, topic, track_list):
     """Connects to Twitter stream API."""
-    topic = get_full_topic_name(project_name, topic)
-
     print 'Connecting to Twitter...'
 
     with open('twitter.json') as f:
