@@ -54,7 +54,7 @@ public class TwitterDataflow {
   */
   static class ExtractEntitiesFn extends DoFn<String, String>{
 
-    private static final Logger LOG = LoggerFactory.getLogger(ExtractEntitiesFn.class);
+    //private static final Logger LOG = LoggerFactory.getLogger(ExtractEntitiesFn.class);
 
     @Override
     public void processElement(ProcessContext c) {
@@ -63,12 +63,12 @@ public class TwitterDataflow {
       JSONObject tweet = new JSONObject(in);
 
       Instant timestamp = new Instant(tweet.getLong("timestamp_ms"));
-      LOG.debug("Timestamp: " + timestamp);
+      //LOG.debug("Timestamp: " + timestamp);
 
       this.processTweet(c, tweet, timestamp);
       
       if (!tweet.isNull("quoted_status")) {
-        LOG.debug("Found quoted_status");
+        //LOG.debug("Found quoted_status");
         JSONObject quotedTweet = tweet.getJSONObject("quoted_status");
         this.processTweet(c, quotedTweet, timestamp);
       }
@@ -81,15 +81,17 @@ public class TwitterDataflow {
       JSONArray mentions = entities.getJSONArray("user_mentions");
       for (int i = 0; i < mentions.length(); i++) {
         JSONObject mention = mentions.getJSONObject(i);
-        LOG.debug("Mention: " + "@"+mention.getString("screen_name").toLowerCase());
-        c.outputWithTimestamp("@"+mention.getString("screen_name").toLowerCase(), timestamp);
+        //LOG.debug("Mention: " + "@"+mention.getString("screen_name").toLowerCase());
+        //c.outputWithTimestamp("@"+mention.getString("screen_name").toLowerCase(), timestamp);
+        c.output("@"+mention.getString("screen_name").toLowerCase());
       }
 
       JSONArray hashtags = entities.getJSONArray("hashtags");
       for (int i = 0; i < hashtags.length(); i++) {
         JSONObject hashtag = hashtags.getJSONObject(i);
-        LOG.debug("Hashtag: " + "#"+hashtag.getString("text").toLowerCase());
-        c.outputWithTimestamp("#"+hashtag.getString("text").toLowerCase(), timestamp);
+        //LOG.debug("Hashtag: " + "#"+hashtag.getString("text").toLowerCase());
+        //c.outputWithTimestamp("#"+hashtag.getString("text").toLowerCase(), timestamp);
+        c.output("@"+hashtag.getString("text").toLowerCase());
       }      
     }
 
