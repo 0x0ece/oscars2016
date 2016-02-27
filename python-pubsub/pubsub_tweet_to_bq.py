@@ -86,7 +86,7 @@ def bq_store_tweets(client, project_name, topic, table_name):
     create_subscription(client, project_name, topic, subscription, ack_deadline = 60)
 
     try:
-        pull_messages_cb(client, project_name, subscription, callback, [dataset_name, table_name])
+        pull_messages_cb(client, project_name, subscription, bq_store_cb, [dataset_name, table_name])
     finally:
         delete_subscription(client, project_name, subscription)
 
