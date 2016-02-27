@@ -183,14 +183,17 @@ class StreamWatcherListener(tweepy.StreamListener):
         self.queue = []
         self.last_sent = 0
 
-    def _enqueue(self, item):
-        self.queue.append( item.encode('utf-8') )
+    def _enqueue(self, item, timestamp_ms):
+        self.queue.append( (item.encode('utf-8'), timestamp_ms) )
 
     def _send(self):
         body = {
             'topic': self.topic,
             'messages': [
-                {'data': base64.urlsafe_b64encode(q)} for q in self.queue
+                {
+                    'data': base64.urlsafe_b64encode(q),
+                    'attributes': {'timestamp_ms': timestamp_ms}
+                } for q in self.queue
             ]
         }
         self.client.topics().publishBatch(body=body).execute(num_retries=NUM_RETRIES)
@@ -201,7 +204,7 @@ class StreamWatcherListener(tweepy.StreamListener):
         # if hasattr(status, 'retweeted_status'):
         #     return
 
-        self._enqueue( json.dumps(status._json) )
+        self._enqueue(json.dumps(status._json), status.timestamp_ms)
         if len(self.queue) >= 100 or (time.time() - self.last_sent > 5.0):
             print "[%.2f] Sending %s tweets" % (time.time(), len(self.queue))
             self._send()

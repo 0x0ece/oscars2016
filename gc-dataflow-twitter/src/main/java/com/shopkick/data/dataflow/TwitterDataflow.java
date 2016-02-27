@@ -154,7 +154,7 @@ public class TwitterDataflow {
     Pipeline pipeline = Pipeline.create(options);
 
     pipeline
-      .apply("Input", PubsubIO.Read.topic(options.getInput()))
+      .apply("Input", PubsubIO.Read.topic(options.getInput()).timestampLabel("timestamp_ms"))
       .apply("Extract", ParDo.of(new ExtractEntitiesFn()))
       .apply("Window", Window.<String>into(SlidingWindows.of(Duration.standardSeconds(options.getWindowSize()))
             .every(Duration.standardSeconds(options.getWindowSlide()))
