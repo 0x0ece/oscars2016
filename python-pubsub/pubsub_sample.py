@@ -464,7 +464,7 @@ def main(argv):
         PUBSUB_SCOPES)
     http = credentials.authorize(http = httplib2.Http())
 
-    client = discovery.build('pubsub', 'v1beta1a', http=http)
+    client = discovery.build('pubsub', 'v1', http=http)
     flags = argparser.parse_args(argv[1:])
     args = flags.args
     check_args_length(args, 2)
