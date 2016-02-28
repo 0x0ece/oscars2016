@@ -28,13 +28,12 @@ def datastore_cb(messages, client_ds, key):
             timestamp, entity, count = message.split(',')
             t = datetime.strptime(timestamp[:-5],'%Y-%m-%dT%H:%M:%S')
             ds_entity = datastore.Entity(key=key)
-            ds_entity['entity'] = unicode(entity)
+            ds_entity['entity'] = entity.decode('utf-8')
             ds_entity['timestamp'] = t
             try:
                 ds_entity['frequency'] = int(count)
             except ValueError:
                 ds_entity['frequency'] = 0
-            ds_entity['parent'] = key
             rows += [ds_entity]
 
         except Exception as e:
