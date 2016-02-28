@@ -17,6 +17,11 @@ class MockTWE(object):
         self.timestamp = entity.timestamp
         self.frequency = entity.frequency
 
+def purge_keys(keys):
+    for k in keys:
+        memcache.delete(MC_GUARD%k)
+        memcache.delete(MC_KEY%k)
+
 def query_or_cache(entity, start, stop):
     nq = memcache.get(MC_GUARD%entity)
     data = memcache.get(MC_KEY%entity)

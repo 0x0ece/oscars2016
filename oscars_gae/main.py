@@ -10,7 +10,7 @@ from google.appengine.api import memcache
 from datetime import datetime, timedelta
 
 import pubsub_utils
-from query_cache import TwitterEntityFreq, query_or_cache
+from query_cache import TwitterEntityFreq, query_or_cache, purge_keys
 
 from apiclient import errors
 
@@ -45,6 +45,18 @@ class EntitiesTopPage(webapp2.RequestHandler):
             'entities': zip(*entities)[0],
             "time": datetime.utcfromtimestamp(data['timestamp']).isoformat()+'.000Z'
             }))
+
+class PurgeCache(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
+        req = self.request.get_all("entities[]",[])
+        token = self.request.get("token",'None')
+        if token != 'LAKnows!483':
+            self.response.write('Fail!')
+            return
+        
+        purge_keys(req)
+        self.response.write('Done!')
 
 class InitHandler(webapp2.RequestHandler):
     """Initializes the Pub/Sub resources."""
@@ -178,4 +190,5 @@ app = webapp2.WSGIApplication([
     ('/entities_data.json',EntitiesDataPage),
     ('/init_ps', InitHandler),
     ('/receive_message', ReceiveMessage),
+    ('/purge_cache', PurgeCache),
 ], debug=False)
