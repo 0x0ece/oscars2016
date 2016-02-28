@@ -61,7 +61,7 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description='A command line interface to move tweets from pubsub to bigquery')
     parser.add_argument('project_name', help='Project name in console')
-    parser.add_argument('topic', help='topic to read from')
+    parser.add_argument('subscription', help='subscription to read from')
 
     args = parser.parse_args(argv[1:])
 
@@ -71,14 +71,9 @@ def main(argv):
     key = client_ds.key('TwitterEntityFreq') #No Name after
 
     uid = uuid.uuid4().get_hex()
-    subscription = '.'.join([args.topic,uid])
-    create_subscription(client_ps, args.project_name, args.topic, subscription, ack_deadline = 60)
-
-    try:
-        pull_messages_cb(client_ps, args.project_name, subscription, 
-            datastore_cb, [client_ds, key], max_messages=100)
-    finally:
-        delete_subscription(client_ps, args.project_name, subscription)
+    
+    pull_messages_cb(client_ps, args.project_name, args.subscription, 
+        datastore_cb, [client_ds, key], max_messages=200)
 
 if __name__ == '__main__':
     main(sys.argv)
