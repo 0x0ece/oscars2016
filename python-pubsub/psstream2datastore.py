@@ -57,7 +57,6 @@ class DatastoreBe(object):
                 self.client_ds.put_multi(rows)
                 break
             except Exception as e:
-                if isinstance()
                 if retries == 0:
                     #bail-out
                     raise
