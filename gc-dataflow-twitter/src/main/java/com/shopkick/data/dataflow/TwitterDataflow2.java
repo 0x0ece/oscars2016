@@ -245,7 +245,7 @@ public class TwitterDataflow2 {
     // Cloud Dataflow specific options
     options.setJobName("TwitterDataflow");
     options.setStreaming(true);
-    options.setMaxNumWorkers(8);
+    options.setNumWorkers(8);
     
     Pipeline pipeline = Pipeline.create(options);
 
