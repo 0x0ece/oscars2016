@@ -15,6 +15,9 @@ import com.google.cloud.dataflow.sdk.transforms.DoFn;
 import com.google.cloud.dataflow.sdk.transforms.PTransform;
 import com.google.cloud.dataflow.sdk.transforms.ParDo;
 import com.google.cloud.dataflow.sdk.transforms.Sum;
+import com.google.cloud.dataflow.sdk.transforms.Filter;
+import com.google.cloud.dataflow.sdk.transforms.Top;
+import com.google.cloud.dataflow.sdk.transforms.SerializableFunction;
 import com.google.cloud.dataflow.sdk.transforms.windowing.FixedWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.SlidingWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.IntervalWindow;
@@ -26,6 +29,7 @@ import com.google.cloud.dataflow.sdk.values.PCollection;
 import com.google.cloud.dataflow.sdk.values.PDone;
 
 import java.util.Properties;
+import java.util.List;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -39,14 +43,17 @@ import org.slf4j.LoggerFactory;
 /**
  * Twitter entities count pipeline
  */
-public class TwitterDataflow {
+public class TwitterDataflow1 {
 
   static final long WINDOW_SIZE = 600;  // Default window duration in seconds
   static final long WINDOW_SLIDE = 10;  // Default window slide in seconds
 
   static final String INPUT = "/topics/theneeds0/twstream";  // Default PubSub topic to read from
   static final String OUTPUT = "/topics/theneeds0/twout";  // Default PubSub topic to write to
-  
+  static final String OUTPUTTOP = "/topics/theneeds0/twouttop";  // Default PubSub topic to write to for Top10
+
+  static final String FILTER = "#oscars2016,#oscars,#redcarpet,#oscar2016,#oscar,#oscarsdata";
+
   /** Extracts entities (hashtags and mentions) from a tweet.
       Input is a json string.
       Supports quoted_status, emitted with the quoting tweet timestamp.
@@ -101,6 +108,46 @@ public class TwitterDataflow {
     }
   }
 
+  /* Filter Class to filter out tweets in the top10
+   *
+   */
+  static class FilterIn implements SerializableFunction<KV<String,Long>,Boolean>{
+    private String[] list;
+    private Boolean in;
+
+    // - list: String, comma separated list of String to filter
+    // - in: Control exclusion/inclusion. If False filter out the entity in the list,
+    //       If True filter in
+    public FilterIn(String list, Boolean in){
+      if (list == null){
+        this.list = null;
+      }else{
+        this.list = list.split(",");
+        this.in = in;
+      }
+    }
+
+    public FilterIn(String list){
+      if (list == null){
+        this.list = null;
+      }else{
+        this.list = list.split(",");
+        this.in = true;
+      }
+    }
+
+    public Boolean apply(KV<String, Long> input){
+      if (this.list == null)
+        return true;
+      for (String e: this.list) {
+        if (input.getKey().equalsIgnoreCase(e))
+          return in;
+      }
+      return !in;
+    }
+
+  }
+
   /** Converts a windowed (Entity, Count) into a printable 
       comma separated string: window end, entity, count.
       TODO: change to SimpleFunction when support for Dataflow 1.4 is available.
@@ -109,6 +156,17 @@ public class TwitterDataflow {
     @Override
     public void processElement(ProcessContext c) {
       String text = ((IntervalWindow)c.window()).end() + "," + c.element().getKey() + "," + c.element().getValue();
+      c.output(text);
+    }
+  }
+
+  public static class FormatAsTextTopFn extends DoFn<List<KV<String, Long>>, String> implements DoFn.RequiresWindowAccess{
+    @Override
+    public void processElement(ProcessContext c) {
+      String text = "" + ((IntervalWindow)c.window()).end();
+      for (KV<String, Long> i:c.element()){
+        text +=  "," + i.getKey() + "," + i.getValue();
+      }
       c.output(text);
     }
   }
@@ -128,6 +186,16 @@ public class TwitterDataflow {
     String getOutput();
     void setOutput(String value);
 
+    @Description("Pubsub topic to write to for the Top10")
+    @Default.String(OUTPUTTOP)
+    String getOutputTop();
+    void setOutputTop(String value);
+
+    @Description("Entities to filter out in the top 10")
+    @Default.String(FILTER)
+    String getFilterEntities();
+    void setFilterEntities(String value);
+
     @Description("Sliding window duration, in seconds")
     @Default.Long(WINDOW_SIZE)
     Long getWindowSize();
@@ -137,7 +205,6 @@ public class TwitterDataflow {
     @Description("Window slide, in seconds")
     @Default.Long(WINDOW_SLIDE)
     Long getWindowSlide();
-
     void setWindowSlide(Long value);
   }
 
@@ -155,7 +222,7 @@ public class TwitterDataflow {
     
     Pipeline pipeline = Pipeline.create(options);
 
-    pipeline
+    PCollection<KV<String,Long>> counted_data = pipeline
       .apply("Input", PubsubIO.Read.topic(options.getInput()).timestampLabel("timestamp_ms"))
       .apply("Extract", ParDo.of(new ExtractEntitiesFn()))
       .apply("Window", Window.<String>into(SlidingWindows.of(Duration.standardSeconds(options.getWindowSize()))
@@ -164,10 +231,18 @@ public class TwitterDataflow {
           .triggering(AfterWatermark.pastEndOfWindow()).withAllowedLateness(Duration.ZERO)
           .discardingFiredPanes()
         )
-      .apply("Count", Count.<String>perElement())
+      .apply("Count", Count.<String>perElement());
+    counted_data
       .apply("Format", ParDo.of(new FormatAsTextFn()))
       .apply("Output", PubsubIO.Write.topic(options.getOutput()))
       ;
+    counted_data
+      .apply("Filter", Filter.by(new FilterIn(options.getFilterEntities(),false)))
+      .apply("Top10",
+        Top.<KV<String,Long>,KV.OrderByValue<String,Long>>of(
+          10,new KV.OrderByValue<String,Long>()).withoutDefaults())
+      .apply("FormatTop10",ParDo.of(new FormatAsTextTopFn()))
+      .apply("OutputTop10", PubsubIO.Write.topic(options.getOutputTop()));
 
     pipeline.run();
   }
