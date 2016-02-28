@@ -39,7 +39,7 @@ def datastore_cb(messages, client_ds, key):
 
         except Exception as e:
             print(e)
-    client_bq.put_multi(rows)
+    client_ps.put_multi(rows)
     n_msg = len(messages)
     n_rows = len(rows)
     print "[%s] Received %s messages, inserted %s rows" % (
