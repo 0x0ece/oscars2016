@@ -62,7 +62,7 @@ class EntitiesDataPage(webapp2.RequestHandler):
 
     def _create_list_zerofill(self, data, start,stop):
         next = self._to_timestamp(start)/10*10+10
-        stop = self._to_timestamp(stop)/10*10-60
+        stop = self._to_timestamp(stop)/10*10-120
         now = 0
         for i in data:
             now = self._to_timestamp(i.timestamp)
