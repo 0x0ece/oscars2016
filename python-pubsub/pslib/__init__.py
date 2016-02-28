@@ -139,14 +139,14 @@ def publish_message_batch(client, project_name, topic, messages):
         topic=topic, body=body).execute(num_retries=NUM_RETRIES)
     return resp
 
-def pull_messages(client, project_name, subscription, no_loop = False):
+def pull_messages(client, project_name, subscription, no_loop = False, max_messages = None):
     """Pull messages from a given subscription."""
     subscription = get_full_subscription_name(
         project_name,
         subscription)
     body = {
         'returnImmediately': False,
-        'maxMessages': BATCH_SIZE
+        'maxMessages': max_messages or BATCH_SIZE
     }
     while True:
         try:
@@ -172,14 +172,15 @@ def pull_messages(client, project_name, subscription, no_loop = False):
         if no_loop:
             break
 
-def pull_messages_cb(client, project_name, subscription, callback, cb_args = [], no_loop = False):
+def pull_messages_cb(client, project_name, subscription, callback, cb_args = [], 
+    no_loop = False, max_messages = None):
     """Pull messages from a given subscription."""
     subscription = get_full_subscription_name(
         project_name,
         subscription)
     body = {
         'returnImmediately': False,
-        'maxMessages': BATCH_SIZE
+        'maxMessages': max_messages or BATCH_SIZE
     }
     while True:
         try:
