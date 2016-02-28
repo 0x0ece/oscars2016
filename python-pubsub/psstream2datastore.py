@@ -73,7 +73,7 @@ def main(argv):
     uid = uuid.uuid4().get_hex()
     
     pull_messages_cb(client_ps, args.project_name, args.subscription, 
-        datastore_cb, [client_ds, key], max_messages=200)
+        datastore_cb, [client_ds, key], max_messages=100)
 
 if __name__ == '__main__':
     main(sys.argv)
