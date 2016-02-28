@@ -59,7 +59,7 @@ def main(argv):
     key = client_ds.key('TwitterEntityFreq','Oscar2016')
 
     uid = uuid.uuid4().get_hex()
-    subscription = '.'.join([topic,uid])
+    subscription = '.'.join([args.topic,uid])
     create_subscription(client_ps, args.project_name, args.topic, subscription, ack_deadline = 60)
 
     try:
