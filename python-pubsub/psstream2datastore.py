@@ -9,6 +9,10 @@ from pslib import *
 
 from datetime import datetime
 
+import sys
+import argparse
+import uuid
+
 def create_datastore_client(http=None):
     credentials = oauth2client.GoogleCredentials.get_application_default()
     if not http:
