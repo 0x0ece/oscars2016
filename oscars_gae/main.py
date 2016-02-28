@@ -124,14 +124,14 @@ class EntitiesDataPage(webapp2.RequestHandler):
         prev = 0
         prev_t = next
         for i in data:
-            now = self._to_timestamp(i.timestamp)
-            while now > next:
-                w = 1.*(now - next)/(now - prev_t)
-                yield {
-                    "time": datetime.utcfromtimestamp(next).isoformat()+'.000Z',
-                    "count": int(prev * w + i.frequency * (1-w)),
-                    }
-                next += 10
+            # now = self._to_timestamp(i.timestamp)
+            # while now > next:
+            #     w = 1.*(now - next)/(now - prev_t)
+            #     yield {
+            #         "time": datetime.utcfromtimestamp(next).isoformat()+'.000Z',
+            #         "count": int(prev * w + i.frequency * (1-w)),
+            #         }
+            #     next += 10
             yield {
                 "time": i.timestamp.isoformat()+'.000Z',
                 "count": int(i.frequency),
@@ -139,12 +139,12 @@ class EntitiesDataPage(webapp2.RequestHandler):
             prev = i.frequency
             prev_t = now
             next = now+10
-        while next < stop:
-            yield {
-                "time": datetime.utcfromtimestamp(next).isoformat()+'.000Z',
-                "count": 0,
-                }
-            next += 10
+        # while next < stop:
+        #     yield {
+        #         "time": datetime.utcfromtimestamp(next).isoformat()+'.000Z',
+        #         "count": 0,
+        #         }
+        #     next += 10
 
 class ReceiveMessage(webapp2.RequestHandler):
     """A handler for push subscription endpoint.."""
