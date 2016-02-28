@@ -16,6 +16,6 @@ app.customContexts = {
 };
 
 app.registerStore(require('./stores/ApplicationStore'));
-app.registerStore(require('./stores/TimeStore'));
+app.registerStore(require('./stores/TwitterStore'));
 
 export default app;

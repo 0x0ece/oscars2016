@@ -26,6 +26,7 @@ import com.google.cloud.dataflow.sdk.transforms.windowing.SlidingWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.IntervalWindow;
 import com.google.cloud.dataflow.sdk.transforms.windowing.Window;
 import com.google.cloud.dataflow.sdk.transforms.windowing.AfterWatermark;
+import com.google.cloud.dataflow.sdk.transforms.windowing.AfterProcessingTime;
 import com.google.cloud.dataflow.sdk.util.gcsfs.GcsPath;
 import com.google.cloud.dataflow.sdk.values.KV;
 import com.google.cloud.dataflow.sdk.values.PCollection;
@@ -75,7 +76,7 @@ public class TwitterDataflow {
       JSONObject tweet = new JSONObject(in);
 
       Instant timestamp = new Instant(tweet.getLong("timestamp_ms"));
-      LOG.debug("Timestamp: " + timestamp);
+      LOG.info("Timestamp: " + timestamp);
 
       this.processTweet(c, tweet, timestamp);
       
@@ -116,9 +117,13 @@ public class TwitterDataflow {
       TODO: change to SimpleFunction when support for Dataflow 1.4 is available.
   */
   public static class FormatAsTextFn extends DoFn<KV<String, Long>, String> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ExtractEntitiesFn.class);
+
     @Override
     public void processElement(ProcessContext c) {
       String text = ((IntervalWindow)c.window()).end() + "," + c.element().getKey() + "," + c.element().getValue();
+      LOG.info("Output: " + text);
       c.output(text);
     }
   }
@@ -224,7 +229,8 @@ public class TwitterDataflow {
       .apply("Window", Window.<String>into(SlidingWindows.of(Duration.standardSeconds(options.getWindowSize()))
             .every(Duration.standardSeconds(options.getWindowSlide()))
           )
-          .triggering(AfterWatermark.pastEndOfWindow()).withAllowedLateness(Duration.ZERO)
+          // .triggering(AfterWatermark.pastEndOfWindow()).withAllowedLateness(Duration.ZERO)
+          .triggering(AfterProcessingTime.pastFirstElementInPane().plusDelayOf(Duration.standardMinutes(1))).withAllowedLateness(Duration.ZERO)
           .discardingFiredPanes()
         )
       .apply("Count", Count.<String>perElement())

@@ -1,32 +1,24 @@
 import React from 'react';
 
-import {Button}  from 'react-bootstrap';
+import {Button, Input, ButtonInput, Glyphicon}  from 'react-bootstrap';
 import RTChart from 'react-rt-chart';
 import { Line } from 'react-chartjs';
 
-// import {connectToStores}  from 'fluxible-addons-react';
-// import TimeStore from '../stores/TimeStore';
-// import updateTime from '../actions/updateTime';
+import {connectToStores}  from 'fluxible-addons-react';
+import TwitterStore from '../stores/TwitterStore';
+import updateEntityChart from '../actions/updateEntityChart';
+import updateEntityTop from '../actions/updateEntityTop';
+import setEntitySearch from '../actions/setEntitySearch';
 
 class EntityChart extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {data: [], chart: null};
-        // for ( var i = 0; i < 10000; i++ ) {
-          
-        //   y += Math.round(5 + Math.random() * (-5 - 5));    
-        //   dataPoints.push({ y: y});
-        // }   
+        this.state = {polling: true, manual: false, chart: null};
     }
 
     getRandomValue() {
         return Math.random();
-    }
-
-    chartRender() {
-        var y = 0;
-        this.state.chart.render();
     }
 
     chartLegendClick(e) {
@@ -45,20 +37,22 @@ class EntityChart extends React.Component {
           animationEnabled: true,
           zoomEnabled: true,
           
-          title:{
-            text: "Top 5 hastags and mentions"
-          },    
+          // title:{
+          //   text: "Real time top 5"
+          // },    
           data: [
-              {
-                type: "spline", 
-                showInLegend: true,             
-                dataPoints: []
-              },
-              {
-                type: "spline",
-                showInLegend: true,          
-                dataPoints: []
-              }
+              // {
+              //   type: "spline", 
+              //   showInLegend: true,
+              //   legendText: "Aaa",
+              //   dataPoints: []
+              // },
+              // {
+              //   type: "spline",
+              //   showInLegend: true,
+              //   legendText: "Bbb",
+              //   dataPoints: []
+              // }
           ],
             legend: {
                 cursor: "pointer",
@@ -70,90 +64,132 @@ class EntityChart extends React.Component {
 
         var that = this;
         setInterval(function() {
-            var data = that.state.data;
+            if (that.state.polling) {
+                that.updateEntityChart();
+            }
+        }, 15000);
+        setInterval(function() {
+            if (that.state.polling) {
+                that.updateEntityTop();
+            }
+        }, 60000);
 
-            var newData0 = { x: new Date(), y: that.getRandomValue() };
-            var newData1 = { x: new Date(), y: that.getRandomValue() };
-
-            data.push(newData0);
-
-            that.state.chart.options.data[0].dataPoints.push(newData0);
-            that.state.chart.options.data[1].dataPoints.push(newData1);
-            that.setState({data: data});
-        }, 1000);
+        if (that.state.polling) {
+            this.updateEntityTop();
+            setTimeout(function() { that.updateEntityChart(); }, 2000);
+        }
     }
 
     componentDidUpdate() {
-        this.chartRender();
+        var chart = this.state.chart;
+        var chartData = chart.options.data;
+        var entitiesList = this.props.entity_list;
+        var entitiesData = this.props.entity_data;
+
+        // corrects number of entites
+        while (chartData.length < entitiesList.length) {
+            chartData.push({
+                type: "spline", 
+                showInLegend: true,
+                legendText: "",
+                dataPoints: []
+            });
+        }
+
+        while (chartData.length > entitiesList.length) {
+            chartData.pop();
+        }
+
+        for (var i = 0; i < chartData.length; i++) {
+            var newData = entitiesData[ entitiesList[i] ] || [];
+
+            if (chartData[i].legendText != entitiesList[i]) {
+                chartData[i].legendText = entitiesList[i];
+                chartData[i].dataPoints = newData;
+            } else {
+                // push new data
+                var dataPoints = chartData[i].dataPoints;
+
+                if (dataPoints.length == 0) {
+                    chartData[i].dataPoints = newData
+                } else {
+                    var lastEl = dataPoints[dataPoints.length - 1] || {};
+                    var lastTime = lastEl.x || 0;
+                    for (var j = 0; j < newData.length; j++) {
+                        if (newData[j].x > lastTime) {
+                            dataPoints.push(newData[j]);
+                        }
+                    }
+                    if (dataPoints.length < newData.length) {
+                        chartData[i].dataPoints = newData;
+                    }
+                }
+            }
+        }
+
+        chart.render();
+    }
+
+    updateEntityChart() {
+        this.context.executeAction(updateEntityChart);
+    }
+
+    updateEntityTop() {
+        this.context.executeAction(updateEntityTop);
+    }
+
+    realTimeUpdate() {
+        if (!this.state.polling) {
+            // on restart, refresh top
+            this.updateEntityTop();
+        }
+        this.setState({ polling: !this.state.polling });
+    }
+
+    setManualOn() {
+        this.setState({ manual: true, polling: true });
+        this.context.executeAction(setEntitySearch, {search: this.refs.input.getValue()});
+    }
+
+    setManualOff() {
+        this.setState({ manual: false, polling: true });
+        this.context.executeAction(updateEntityTop);
     }
 
     render () {
-        var chart = {
-            // axis: {
-            //     y: { min: 50, max: 100 }
-            // },
-            point: {
-                show: false
-            }
-        };
+        var buttonSearch = (
+            <Button bsStyle={this.state.manual ? 'primary' : 'default'} onClick={this.setManualOn.bind(this)}>Search</Button>
+        );
 
+        return (
+            <div>
+                <div id="chartContainer" style={{height: "300px", width: "100%"}}></div>
+                <form className="form-inline">
 
-        var graphData = this.state.data;
+                    <div className="page-controls">
+                      <Button onClick={this.realTimeUpdate.bind(this)}>
+                          <Glyphicon glyph={this.state.polling ? 'pause' : 'play'} />
+                      </Button>
+                      <span className="spacer" />
+                      <ButtonInput bsStyle={!this.state.manual ? 'primary' : 'default'} onClick={this.setManualOff.bind(this)}>Top 5</ButtonInput>
+                      <span className="spacer" />
+                      or 
+                      <span className="spacer" />
+                    </div>
+                  <Input className="input-search" type="text" ref="input" placeholder="Type #hashtags, @mentions" buttonAfter={buttonSearch} />                  
 
-    // var options = {
-    //   // responsive: true,
-    //   pointDotRadius: 0,
-    //   scaleShowHorizontalLines: false,
-    //   scaleShowVerticalLines: false,
-    //   // showScale: false,
-    //   datasetStrokeWidth: 6,
-
-    //   // tooltips
-    //   pointHitDetectionRadius: 1,
-    //   tooltipTemplate: "",
-    //   tooltipEvents: [],
-    //   // tooltipTemplate: "<%= value %>%",
-
-    //   // y axis
-    //   // scaleOverride: true,
-    //   // scaleSteps: 3,
-    //   // scaleStepWidth: 50,
-    //   // scaleStartValue: 0
-    // };
-
-    // var data = {
-    //   labels: graphData.map( x => x.date.getDay() % 7 == 0 ? (1 + x[0].getMonth()) + '/' + x[0].getDate() : '' ),
-    //   datasets: [
-    //     {
-    //       fillColor: "#fff",
-    //       strokeColor: "#31a4d9",
-    //       pointColor: "#31a4d9",
-    //       pointStrokeColor: "#fff",
-    //       pointHighlightFill: "#fff",
-    //       pointHighlightStroke: "#31a4d9",
-    //       data: graphData.map( x => x.Car )
-    //     }
-    //   ]
-    // };
-
-    return <div id="chartContainer" style={{height: "300px", width: "100%"}}></div>
-
-    // return <Line data={data} options={options} />
-
-        // return <RTChart
-        //         chart={chart}
-        //         fields={['Car','Bus']}
-        //         maxValues={1000}
-        //         initialData={data} />
+                </form>
+            </div>
+        );
     }
 }
 
-// Timestamp.contextTypes = {
-//     executeAction: React.PropTypes.func.isRequired
-// };
+EntityChart.contextTypes = {
+    executeAction: React.PropTypes.func.isRequired
+};
 
-// Timestamp = connectToStores(Timestamp, [TimeStore], (context, props) => {
-//     return context.getStore(TimeStore).getState();
-// });
+EntityChart = connectToStores(EntityChart, [TwitterStore], (context, props) => {
+    return context.getStore(TwitterStore).getState();
+});
 
 export default EntityChart;
