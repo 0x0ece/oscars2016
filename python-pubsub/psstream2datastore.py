@@ -55,7 +55,7 @@ def main(argv):
     client_ds = create_datastore_client()
     client_ps = create_pubsub_client()
 
-    key = client_ds.key('TwitterEntityFreq','Oscar2016')
+    key = client_ds.key('TwitterEntityFreq')
 
     uid = uuid.uuid4().get_hex()
     subscription = '.'.join([args.topic,uid])
