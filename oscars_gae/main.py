@@ -10,6 +10,7 @@ from google.appengine.api import memcache
 from datetime import datetime, timedelta
 
 import pubsub_utils
+from query_cache import TwitterEntityFreq, query_or_cache
 
 from apiclient import errors
 
@@ -91,12 +92,6 @@ class InitHandler(webapp2.RequestHandler):
     def get(self):
         self.response.write("Done")
 
-class TwitterEntityFreq(ndb.Model):
-    """A main model for representing an individual Guestbook entry."""
-    entity = ndb.StringProperty(indexed=True)
-    timestamp = ndb.DateTimeProperty()
-    frequency = ndb.IntegerProperty()
-
 class EntitiesDataPage(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
@@ -112,11 +107,7 @@ class EntitiesDataPage(webapp2.RequestHandler):
         if prev > OSCAR_START:
             prev = OSCAR_START
         for i in req:
-            entities = TwitterEntityFreq.query(
-                TwitterEntityFreq.entity == i, 
-                TwitterEntityFreq.timestamp > prev, 
-                TwitterEntityFreq.timestamp <= now
-                ).order(TwitterEntityFreq.timestamp)
+            entities = query_or_cache(i, prev, now)
             data = list(self._create_list_zerofill(entities, prev, now))
             ret[i] = data
         self.response.write(json.dumps({
@@ -128,20 +119,25 @@ class EntitiesDataPage(webapp2.RequestHandler):
 
     def _create_list_zerofill(self, data, start,stop):
         next = self._to_timestamp(start)/10*10+10
-        stop = self._to_timestamp(stop)/10*10-120
+        stop = self._to_timestamp(stop)/10*10-180
         now = 0
+        prev = 0
+        prev_t = next
         for i in data:
             now = self._to_timestamp(i.timestamp)
             while now > next:
+                w = 1.*(now - next)/(now - prev_t)
                 yield {
                     "time": datetime.utcfromtimestamp(next).isoformat()+'.000Z',
-                    "count": 0,
+                    "count": int(prev * w + i.frequency * (1-w)),
                     }
                 next += 10
             yield {
                 "time": i.timestamp.isoformat()+'.000Z',
                 "count": int(i.frequency),
             }
+            prev = i.frequency
+            prev_t = now
             next = now+10
         while next < stop:
             yield {
