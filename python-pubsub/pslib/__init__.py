@@ -172,9 +172,11 @@ def pull_messages(client, project_name, subscription, no_loop = False, max_messa
         if no_loop:
             break
 
-def pull_messages_cb(client, project_name, subscription, callback, cb_args = [], 
+def pull_messages_cb(client, project_name, subscription, callback, cb_args = None, 
     no_loop = False, max_messages = None):
     """Pull messages from a given subscription."""
+    if cb_args is None:
+        cb_args = []
     subscription = get_full_subscription_name(
         project_name,
         subscription)

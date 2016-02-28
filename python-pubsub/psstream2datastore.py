@@ -22,40 +22,55 @@ def create_datastore_client(http=None):
 
     return datastore.Client(credentials=credentials)
 
-def datastore_cb(messages, client_ds, key):
-    rows = []
-    for message in messages:
-        try:
-            timestamp, entity, count = message.split(',')
-            t = datetime.strptime(timestamp[:-5],'%Y-%m-%dT%H:%M:%S')
-            ds_entity = datastore.Entity(key=key)
-            ds_entity['entity'] = entity.decode('utf-8')
-            ds_entity['timestamp'] = t
-            try:
-                ds_entity['frequency'] = int(count)
-            except ValueError:
-                ds_entity['frequency'] = 0
-            rows += [ds_entity]
+class DatastoreBe(object):
+    def __init__(self, client_ds, key):
+        self.client_ds = client_ds
+        self.key = key
+        self.__queue = []
+        self.__lastwrite = time.time()
 
-        except Exception as e:
-            print(e)
-    retries = 10
-    while True:
-        try:
-            client_ds.put_multi(rows)
-            break
-        except:
-            if retries == 0:
-                #bail-out
-                raise
-            delay = (11-retries)**2 * 0.25
-            print("Received an exception, waiting %.2f"%delay)
-            time.sleep(delay)
-            retries -= 1
-    n_msg = len(messages)
-    n_rows = len(rows)
-    print "[%s] Received %s messages, inserted %s rows" % (
-        'OK' if n_msg==n_rows else '!!', n_msg, n_rows)
+    def datastore_cb(self, messages):
+        self.__queue += messages
+        if len(self.__queue) > 2000 or (time.time() - self.__lastwrite) > 10:
+            self.__write()
+
+    def __write(self):
+        rows = []
+        for message in self.__queue:
+            try:
+                timestamp, entity, count = message.split(',')
+                t = datetime.strptime(timestamp[:-5],'%Y-%m-%dT%H:%M:%S')
+                ds_entity = datastore.Entity(key=self.key)
+                ds_entity['entity'] = entity.decode('utf-8')
+                ds_entity['timestamp'] = t
+                try:
+                    ds_entity['frequency'] = int(count)
+                except ValueError:
+                    ds_entity['frequency'] = 0
+                rows += [ds_entity]
+
+            except Exception as e:
+                print(e)
+        retries = 10
+        while True:
+            try:
+                self.client_ds.put_multi(rows)
+                break
+            except Exception as e:
+                if isinstance()
+                if retries == 0:
+                    #bail-out
+                    raise
+                delay = (11-retries)**2 * 0.25
+                print("Received an exception, waiting %.2f"%delay)
+                time.sleep(delay)
+                retries -= 1
+        n_msg = len(self.__queue)
+        n_rows = len(rows)
+        print "[%s] Received %s messages, inserted %s rows" % (
+            'OK' if n_msg==n_rows else '!!', n_msg, n_rows)
+        self.__queue=[]
+        self.__lastwrite = time.time()
 
 def main(argv):
     parser = argparse.ArgumentParser(
@@ -70,10 +85,12 @@ def main(argv):
 
     key = client_ds.key('TwitterEntityFreq') #No Name after
 
+    ds_store = DatastoreBe(client_ds, key)
+
     uid = uuid.uuid4().get_hex()
     
     pull_messages_cb(client_ps, args.project_name, args.subscription, 
-        datastore_cb, [client_ds, key], max_messages=100)
+        ds_store.datastore_cb, max_messages=100)
 
 if __name__ == '__main__':
     main(sys.argv)
