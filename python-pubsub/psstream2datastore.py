@@ -8,6 +8,7 @@ from gcloud import datastore
 from pslib import *
 
 from datetime import datetime
+import time
 
 import sys
 import argparse
@@ -38,7 +39,19 @@ def datastore_cb(messages, client_ds, key):
 
         except Exception as e:
             print(e)
-    client_ds.put_multi(rows)
+    retries = 10
+    while True
+        try:
+            client_ds.put_multi(rows)
+            break
+        except:
+            if retries == 0:
+                #bail-out
+                raise
+            delay = (11-retries)**2 * 0.25
+            print("Received an exception, waiting %.2f"%delay)
+            time.sleep(delay)
+            retries -= 1
     n_msg = len(messages)
     n_rows = len(rows)
     print "[%s] Received %s messages, inserted %s rows" % (
@@ -55,7 +68,7 @@ def main(argv):
     client_ds = create_datastore_client()
     client_ps = create_pubsub_client()
 
-    key = client_ds.key('TwitterEntityFreq')
+    key = client_ds.key('TwitterEntityFreq') #No Name after
 
     uid = uuid.uuid4().get_hex()
     subscription = '.'.join([args.topic,uid])
