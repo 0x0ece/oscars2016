@@ -40,7 +40,7 @@ def datastore_cb(messages, client_ds, key):
         except Exception as e:
             print(e)
     retries = 10
-    while True
+    while True:
         try:
             client_ds.put_multi(rows)
             break
