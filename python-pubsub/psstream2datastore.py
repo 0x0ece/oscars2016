@@ -63,7 +63,7 @@ def main(argv):
     create_subscription(client_ps, args.project_name, args.topic, subscription, ack_deadline = 60)
 
     try:
-        pull_messages_cb(client_ps, project_name, subscription, 
+        pull_messages_cb(client_ps, args.project_name, subscription, 
             datastore_cb, [client_ds, key], max_messages=100)
     finally:
         delete_subscription(client_ps, args.project_name, subscription)
