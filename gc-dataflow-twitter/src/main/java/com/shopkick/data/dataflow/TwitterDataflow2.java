@@ -20,12 +20,18 @@ import com.google.cloud.dataflow.sdk.transforms.Top;
 import com.google.cloud.dataflow.sdk.transforms.SerializableFunction;
 import com.google.cloud.dataflow.sdk.transforms.windowing.FixedWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.SlidingWindows;
+import com.google.cloud.dataflow.sdk.transforms.windowing.GlobalWindows;
 import com.google.cloud.dataflow.sdk.transforms.windowing.IntervalWindow;
+import com.google.cloud.dataflow.sdk.transforms.windowing.GlobalWindow;
 import com.google.cloud.dataflow.sdk.transforms.windowing.Window;
 import com.google.cloud.dataflow.sdk.transforms.windowing.AfterWatermark;
+import com.google.cloud.dataflow.sdk.transforms.windowing.AfterProcessingTime;
+import com.google.cloud.dataflow.sdk.transforms.windowing.Repeatedly;
+import com.google.cloud.dataflow.sdk.transforms.Flatten;
 import com.google.cloud.dataflow.sdk.util.gcsfs.GcsPath;
 import com.google.cloud.dataflow.sdk.values.KV;
 import com.google.cloud.dataflow.sdk.values.PCollection;
+import com.google.cloud.dataflow.sdk.values.PCollectionList;
 import com.google.cloud.dataflow.sdk.values.PDone;
 
 import java.util.Properties;
@@ -43,7 +49,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Twitter entities count pipeline
  */
-public class TwitterDataflow1 {
+public class TwitterDataflow2 {
 
   static final long WINDOW_SIZE = 600;  // Default window duration in seconds
   static final long WINDOW_SLIDE = 10;  // Default window slide in seconds
@@ -51,8 +57,9 @@ public class TwitterDataflow1 {
   static final String INPUT = "/topics/theneeds0/twstream";  // Default PubSub topic to read from
   static final String OUTPUT = "/topics/theneeds0/twout";  // Default PubSub topic to write to
   static final String OUTPUTTOP = "/topics/theneeds0/twouttop";  // Default PubSub topic to write to for Top10
+  static final String OUTPUTGLOBAL = "/topics/theneeds0/twoutglobal";  // Default PubSub topic to write to for Top10
 
-  static final String FILTER = "#oscars2016,#oscars,#redcarpet,#oscar2016,#oscar,#oscarsdata";
+  static final String FILTER = "#oscars2016,#oscars,#redcarpet,#oscar2016,#oscar,#oscarsdata,@theacademy";
 
   /** Extracts entities (hashtags and mentions) from a tweet.
       Input is a json string.
@@ -108,6 +115,13 @@ public class TwitterDataflow1 {
     }
   }
 
+  static class TwitterCounted extends DoFn<String, String>{
+    @Override
+    public void processElement(ProcessContext c) {
+      c.output("total_tweets");
+    }
+  }
+
   /* Filter Class to filter out tweets in the top10
    *
    */
@@ -160,6 +174,14 @@ public class TwitterDataflow1 {
     }
   }
 
+  public static class GlobalFormatAsTextFn extends DoFn<KV<String, Long>, String> implements DoFn.RequiresWindowAccess{
+    @Override
+    public void processElement(ProcessContext c) {
+      String text = "" + c.timestamp() + "," + c.element().getKey() + "," + c.element().getValue();
+      c.output(text);
+    }
+  }
+
   public static class FormatAsTextTopFn extends DoFn<List<KV<String, Long>>, String> implements DoFn.RequiresWindowAccess{
     @Override
     public void processElement(ProcessContext c) {
@@ -191,6 +213,11 @@ public class TwitterDataflow1 {
     String getOutputTop();
     void setOutputTop(String value);
 
+    @Description("Pubsub topic to write to for the Global Counters")
+    @Default.String(OUTPUTGLOBAL)
+    String getOutputGlobal();
+    void setOutputGlobal(String value);
+
     @Description("Entities to filter out in the top 10")
     @Default.String(FILTER)
     String getFilterEntities();
@@ -218,13 +245,15 @@ public class TwitterDataflow1 {
     // Cloud Dataflow specific options
     options.setJobName("TwitterDataflow");
     options.setStreaming(true);
-    options.setMaxNumWorkers(4);
+    options.setMaxNumWorkers(8);
     
     Pipeline pipeline = Pipeline.create(options);
 
-    PCollection<KV<String,Long>> counted_data = pipeline
-      .apply("Input", PubsubIO.Read.topic(options.getInput()).timestampLabel("timestamp_ms"))
-      .apply("Extract", ParDo.of(new ExtractEntitiesFn()))
+    PCollection<String> raw_data = pipeline
+      .apply("Input", PubsubIO.Read.topic(options.getInput()).timestampLabel("timestamp_ms"));
+    PCollection<String> ent_data = raw_data
+      .apply("Extract", ParDo.of(new ExtractEntitiesFn()));
+    PCollection<KV<String,Long>> counted_data = ent_data
       .apply("Window", Window.<String>into(SlidingWindows.of(Duration.standardSeconds(options.getWindowSize()))
             .every(Duration.standardSeconds(options.getWindowSlide()))
           )
@@ -236,6 +265,7 @@ public class TwitterDataflow1 {
       .apply("Format", ParDo.of(new FormatAsTextFn()))
       .apply("Output", PubsubIO.Write.topic(options.getOutput()))
       ;
+    // Top10 Branch
     counted_data
       .apply("Filter", Filter.by(new FilterIn(options.getFilterEntities(),false)))
       .apply("Top10",
@@ -243,6 +273,25 @@ public class TwitterDataflow1 {
           10,new KV.OrderByValue<String,Long>()).withoutDefaults())
       .apply("FormatTop10",ParDo.of(new FormatAsTextTopFn()))
       .apply("OutputTop10", PubsubIO.Write.topic(options.getOutputTop()));
+
+    // Global Counters
+    PCollection<String> global_counters = 
+      PCollectionList.of(ent_data).and(raw_data.apply(ParDo.of(new TwitterCounted())))
+      .apply(Flatten.<String>pCollections());
+
+    global_counters
+      .apply("GlobalWindow", Window.<String>into(new GlobalWindows())
+          .triggering(
+            Repeatedly.forever(AfterProcessingTime.pastFirstElementInPane()
+              .plusDelayOf(Duration.standardSeconds(60))))
+          .accumulatingFiredPanes()
+        )
+      .apply("GlobalCount", Count.<String>perElement())
+      .apply("GlobalFormat", ParDo.of(new GlobalFormatAsTextFn()))
+      .apply("GlobalOutput", PubsubIO.Write.topic(options.getOutputGlobal()))
+      ;
+    // Top10
+
 
     pipeline.run();
   }

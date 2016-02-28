@@ -52,7 +52,7 @@ public class TwitterDataflow1 {
   static final String OUTPUT = "/topics/theneeds0/twout";  // Default PubSub topic to write to
   static final String OUTPUTTOP = "/topics/theneeds0/twouttop";  // Default PubSub topic to write to for Top10
 
-  static final String FILTER = "#oscars2016,#oscars,#redcarpet,#oscar2016,#oscar,#oscarsdata";
+  static final String FILTER = "#oscars2016,#oscars,#redcarpet,#oscar2016,#oscar,#oscarsdata,@theacademy";
 
   /** Extracts entities (hashtags and mentions) from a tweet.
       Input is a json string.
