@@ -77,10 +77,12 @@ def main(argv):
         description='A command line interface to move tweets from pubsub to bigquery')
     parser.add_argument('project_name', help='Project name in console')
     parser.add_argument('subscription', help='subscription to read from')
+    parser.add_argument('-w','--workers', help='change the number of workers',
+        default = 10, type=int)
 
     args = parser.parse_args(argv[1:])
-    pool = [Process(target = worker, args = (args,)) for i in xrange(10)]
-    print("Starting pool of 10 worker")
+    pool = [Process(target = worker, args = (args,)) for i in xrange(args.workers)]
+    print("Starting pool of %d worker"%args.workers)
     for i in pool:
         i.start()
 
