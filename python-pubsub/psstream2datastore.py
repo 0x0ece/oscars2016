@@ -6,6 +6,7 @@ from apiclient import discovery
 from oauth2client import client as oauth2client
 from gcloud import datastore
 from pslib import *
+from multiprocessing import Process
 
 from datetime import datetime
 import time
@@ -78,7 +79,15 @@ def main(argv):
     parser.add_argument('subscription', help='subscription to read from')
 
     args = parser.parse_args(argv[1:])
+    pool = [Process(target = worker, args = (args,)) for i in xrange(10)]
+    print("Starting pool of 10 worker")
+    for i in pool:
+        i.start()
 
+    for i in pool:
+        i.join()
+
+def worker(args):
     client_ds = create_datastore_client()
     client_ps = create_pubsub_client()
 
