@@ -42,7 +42,7 @@ class DatastoreBe(object):
             try:
                 timestamp, entity, count = message.split(',')
                 t = datetime.strptime(timestamp[:-5],'%Y-%m-%dT%H:%M:%S')
-                q=client.query()
+                q=self.client_ds.query()
                 q.add_filter('entity', '=', '#oscars2016')
                 q.add_filter('timestamp', '=', t)
                 q.kind = 'TwitterEntityFreq'
