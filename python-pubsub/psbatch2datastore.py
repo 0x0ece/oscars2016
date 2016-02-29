@@ -32,7 +32,7 @@ class DatastoreBe(object):
 
     def datastore_cb(self, messages):
         self.__queue += messages
-        if len(self.__queue) > 400 or (time.time() - self.__lastwrite) > 10:
+        if len(self.__queue) > 200 or (time.time() - self.__lastwrite) > 10:
             self.__write()
 
     def __write(self):
