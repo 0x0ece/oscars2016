@@ -47,7 +47,7 @@ class DatastoreBe(object):
                 q.add_filter('timestamp', '=', t)
                 q.kind = 'TwitterEntityFreq'
                 r=q.fetch()
-                for i in r.fetch():
+                for i in r:
                     deletes += [i.key]
                 ds_entity = datastore.Entity(key=self.key)
                 ds_entity['entity'] = entity.decode('utf-8')
