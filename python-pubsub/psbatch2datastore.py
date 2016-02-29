@@ -32,7 +32,7 @@ class DatastoreBe(object):
 
     def datastore_cb(self, messages):
         self.__queue += messages
-        if len(self.__queue) > 200 or (time.time() - self.__lastwrite) > 10:
+        if len(self.__queue) > 400 or (time.time() - self.__lastwrite) > 10:
             self.__write()
 
     def __write(self):
@@ -60,19 +60,20 @@ class DatastoreBe(object):
 
             except Exception as e:
                 print(e)
-        retries = 10
-        while True:
-            try:
-                self.client_ds.delete_multi(deletes)
-                break
-            except Exception as e:
-                if retries == 0:
-                    #bail-out
-                    raise
-                delay = (11-retries)**2 * 0.25
-                print("Deleting: Received an exception, waiting %.2f"%delay)
-                time.sleep(delay)
-                retries -= 1
+        for i in xrange(0,len(deletes),500):
+            retries = 10
+            while True:
+                try:
+                    self.client_ds.delete_multi(deletes[i:i+500])
+                    break
+                except Exception as e:
+                    if retries == 0:
+                        #bail-out
+                        raise
+                    delay = (11-retries)**2 * 0.25
+                    print("Deleting: Received an exception, waiting %.2f"%delay)
+                    time.sleep(delay)
+                    retries -= 1
         retries = 10
         while True:
             try:
