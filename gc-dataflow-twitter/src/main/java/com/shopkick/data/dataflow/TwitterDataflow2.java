@@ -243,7 +243,7 @@ public class TwitterDataflow2 {
       .as(TwitterDataflowOptions.class);
 
     // Cloud Dataflow specific options
-    options.setJobName("TwitterDataflow");
+    //options.setJobName("TwitterDataflow");
     options.setStreaming(true);
     options.setNumWorkers(8);
     
