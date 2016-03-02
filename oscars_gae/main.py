@@ -18,7 +18,7 @@ OSCAR_START = datetime(year=2016,
     month = 2,
     day = 28,
     hour = 22,
-    minute = 0
+    minute = 00
     )
 
 MC_OSCARS_TOP10 = 'Oscars_Top10'
@@ -109,17 +109,43 @@ class EntitiesDataPage(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.headers['Access-Control-Allow-Origin'] = '*'
         req = self.request.get_all("entities[]",[])
+        start = self.request.get("start", None)
+        stop = self.request.get("stop", None)
+        if (start and not stop) or (not start and stop):
+            self.error(404)
+            self.response.write(json.dumps({'error':"Please provide both start and stop"}))
+            return
         if len(req) > 10:
             self.error(404)
             self.response.write(json.dumps({'error':"Too many entities requested"}))
             return
         ret = {}
-        now = datetime.utcnow()
-        prev = now - timedelta(hours = 2)
-        if prev > OSCAR_START:
-            prev = OSCAR_START
+        print start, stop
+        if start and stop:
+            try:
+                now = datetime.strptime(start,'%Y-%m-%dT%H:%M:%SZ')
+                prev = datetime.strptime(stop,'%Y-%m-%dT%H:%M:%SZ')
+            except:
+                self.error(404)
+                self.response.write(json.dumps({'error':"Time in format YYYY-mm-ddTHH:MM:SSZ"}))
+                return
+            force = True
+        else:
+            now = datetime.utcnow()
+            prev = now - timedelta(hours = 1)
+            force = False
+            if prev > OSCAR_START:
+                prev = OSCAR_START
+
+        prev = OSCAR_START
+        now = datetime(year=2016,
+    month = 2,
+    day = 29,
+    hour = 06,
+    minute = 00
+    )
         for i in req:
-            entities = query_or_cache(i, prev, now)
+            entities = query_or_cache(i, prev, now, force)
             data = list(self._create_list_zerofill(entities, prev, now))
             ret[i] = data
         self.response.write(json.dumps({

@@ -2,8 +2,8 @@ from google.appengine.ext import ndb
 from google.appengine.api import memcache
 from datetime import datetime, timedelta
 
-MC_KEY = "mc_cache_%s"
-MC_GUARD = "mc_guard_%s"
+MC_KEY = "mc_cache1_%s"
+MC_GUARD = "mc_guard1_%s"
 
 class TwitterEntityFreq(ndb.Model):
     """A main model for representing an individual Guestbook entry."""
@@ -22,7 +22,18 @@ def purge_keys(keys):
         memcache.delete(MC_GUARD%k)
         memcache.delete(MC_KEY%k)
 
-def query_or_cache(entity, start, stop):
+def query_or_cache(entity, start, stop, force = False):
+    if force:
+        entities = TwitterEntityFreq.query(
+            TwitterEntityFreq.entity == entity, 
+            TwitterEntityFreq.timestamp > start, 
+            TwitterEntityFreq.timestamp <= stop
+            ).order(TwitterEntityFreq.timestamp)
+        data = [MockTWE(i) for i in entities]
+        memcache.set(MC_GUARD%entity,1,30)
+        memcache.set(MC_KEY%entity, data)
+        return [i for i in data]
+
     nq = memcache.get(MC_GUARD%entity)
     data = memcache.get(MC_KEY%entity)
     td = timedelta(seconds = 30)
