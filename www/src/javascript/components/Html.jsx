@@ -15,7 +15,7 @@ class Html extends React.Component{
                     <meta property="og:url" content="http://oscarsdata.github.io/" />
                     <meta property="og:image" content="http://oscarsdata.github.io/oscars2016.jpg" />
                     <meta property="og:description" content="Insights and trending topics during the #Oscars" />
-                    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Dosis:400,600" />
+                    <link href='https://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'/>
                     <link rel="stylesheet" href="./css/main.css" />
                 </head>
                 <body>

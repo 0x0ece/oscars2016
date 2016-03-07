@@ -4,6 +4,7 @@
 @brand-primary: #d1a930;
 //@brand-danger: #ff6868;
 @link-color: #286090;
+@font-family-base: 'Open Sans', sans-serif;
 
 //@grid-gutter-width: 20px;
 //@container-large-desktop: @container-desktop;
@@ -14,6 +15,10 @@
 //.glyphicon-menu-right             { &:before { content: "\e258"; } }
 //.glyphicon-menu-down              { &:before { content: "\e259"; } }
 //.glyphicon-menu-up                { &:before { content: "\e260"; } }
+
+
+// REALTIME
+.form-inline { display: none }
 
 
 
@@ -536,4 +541,11 @@ menu {
     .button-variant(white; @color; @color);
   }
 
+}
+
+.link-menu > button {
+  opacity: 0.5;
+}
+.link-menu.active > button {
+  opacity: 1.0;
 }

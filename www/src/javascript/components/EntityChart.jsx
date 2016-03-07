@@ -9,12 +9,15 @@ import TwitterStore from '../stores/TwitterStore';
 import updateEntityChart from '../actions/updateEntityChart';
 import updateEntityTop from '../actions/updateEntityTop';
 import setEntitySearch from '../actions/setEntitySearch';
+import setEntityInsights from '../actions/setEntityInsights';
 
 class EntityChart extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {polling: true, manual: false, chart: null};
+        // REALTIME
+        // this.state = {polling: true, manual: false, chart: null};
+        this.state = {polling: false, manual: false, chart: null};
     }
 
     getRandomValue() {
@@ -39,7 +42,7 @@ class EntityChart extends React.Component {
           
           // title:{
           //   text: "Real time top 5"
-          // },    
+          // },
           data: [
               // {
               //   type: "spline", 
@@ -63,24 +66,30 @@ class EntityChart extends React.Component {
         this.setState({chart: chart});
 
         var that = this;
-        setInterval(function() {
-            if (that.state.polling) {
-                that.updateEntityChart();
-            }
-        }, 15000);
-        setInterval(function() {
-            if (that.state.polling) {
-                that.updateEntityTop();
-            }
-        }, 60000);
+        // REALTIME
+        // setInterval(function() {
+        //     if (that.state.polling) {
+        //         that.updateEntityChart();
+        //     }
+        // }, 15000);
+        // setInterval(function() {
+        //     if (that.state.polling && !that.state.manual) {
+        //         that.updateEntityTop();
+        //     }
+        // }, 60000);
 
-        if (that.state.polling) {
-            this.updateEntityTop();
-            setTimeout(function() { that.updateEntityChart(); }, 2000);
-        }
+        // if (that.state.polling) {
+        //     this.updateEntityTop();
+        //     setTimeout(function() { that.updateEntityChart(); }, 2000);
+        // }
+        this.setEntityInsights();
     }
 
-    componentDidUpdate() {
+    componentDidUpdate(prevProps, prevState) {
+        if (this.props.insight !== prevProps.insight) {
+            this.setEntityInsights();
+        }
+
         var chart = this.state.chart;
         var chartData = chart.options.data;
         var entitiesList = this.props.entity_list;
@@ -105,6 +114,7 @@ class EntityChart extends React.Component {
 
             if (chartData[i].legendText != entitiesList[i]) {
                 chartData[i].legendText = entitiesList[i];
+                chartData[i].color = this.props.colors[i];
                 chartData[i].dataPoints = newData;
             } else {
                 // push new data
@@ -138,8 +148,15 @@ class EntityChart extends React.Component {
         this.context.executeAction(updateEntityTop);
     }
 
+    setEntityInsights() {
+        this.context.executeAction(setEntityInsights, {
+            insightUrl: this.props.insight,
+            insights: this.props.insightEntities
+        });
+    }
+
     realTimeUpdate() {
-        if (!this.state.polling) {
+        if (!this.state.polling && !this.state.manual) {
             // on restart, refresh top
             this.updateEntityTop();
         }
@@ -176,7 +193,7 @@ class EntityChart extends React.Component {
                       or 
                       <span className="spacer" />
                     </div>
-                  <Input className="input-search" type="text" ref="input" placeholder="Type #hashtags, @mentions" buttonAfter={buttonSearch} />                  
+                    <Input className="input-search" type="text" ref="input" placeholder="Type #hashtags, @mentions" buttonAfter={buttonSearch} />                  
 
                 </form>
             </div>

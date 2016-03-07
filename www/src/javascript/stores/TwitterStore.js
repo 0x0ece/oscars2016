@@ -41,7 +41,7 @@ class Twitter extends BaseStore {
                     }
                 }
 
-                this.emitChange();            
+                this.emitChange();
               })
               .catch(response => {
                 console.log(response);
@@ -107,6 +107,44 @@ class Twitter extends BaseStore {
         }
     }
 
+    setEntityInsights(payload) {
+        // var insights = payload.insights || '';
+        // var newList = insights.split(/[^a-zA-Z0-9#@]/);
+        var newList = payload.insights.filter(function (el) {
+            return el && (el[0] == '#' || el[0] == '@');
+        });
+        if (newList) {
+            this._setEntityListWithOrder(newList);
+            axios
+              .get('/'+payload.insightUrl+'.json', {})
+              .then(response => {
+                var newEntities = response.data.entities || {};
+                // console.log("[TwitterStore] new entities: " + newEntities);
+
+                // 
+                for (var i = 0; i < this.entity_list.length; i++) {
+                    var entity = this.entity_list[i];
+                    var newData = newEntities[entity] || [];
+                    if (newData) {
+                        console.log("[TwitterStore] new data for " + entity);
+                        this.entity_data[entity] = newData.map(function(el) {
+                            // console.log("[TwitterStore] time: "+el.time+", count: "+el.count);
+                            return {
+                                x: new Date(el.time),
+                                y: el.count
+                            }
+                        });
+                    }
+                }
+
+                this.emitChange();
+              })
+              .catch(response => {
+                console.log(response);
+              });
+        }
+    }
+
     updateEntityTop(payload) {
         axios
           .get('http://theneeds0.appspot.com/entities_top.json', {})
@@ -161,7 +199,8 @@ Twitter.storeName = 'Twitter';
 Twitter.handlers = {
     'UPDATE_ENTITY_CHART': 'updateEntityChart',
     'UPDATE_ENTITY_TOP': 'updateEntityTop',
-    'SET_ENTITY_SEARCH': 'setEntitySearch'
+    'SET_ENTITY_SEARCH': 'setEntitySearch',
+    'SET_ENTITY_INSIGHTS': 'setEntityInsights'
 };
 
 export default Twitter;

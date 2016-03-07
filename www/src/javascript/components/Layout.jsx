@@ -23,15 +23,17 @@ var FloatingActionButton = React.createClass({
 });
 
 var MenuItem = React.createClass({
-  _isActive: function() {
-    // return this.isActive('/' + this.props.insight);
-  },
-
   render: function() {
     var className = 'button-menu color-insight'+this.props.id;
-    return (
-        <Link className="link-menu" to={"/" + this.props.insight}>
-          <FloatingActionButton active={this._isActive()} linkButton={true} className={className}>
+    return this.props.insight === 'top' ? (
+        <IndexLink className="link-menu" to={'/'} activeClassName="active">
+          <FloatingActionButton className={className}>
+            {this.props.label}
+          </FloatingActionButton>
+        </IndexLink>
+    ) : (
+        <Link className="link-menu" to={this.props.insight} activeClassName="active">
+          <FloatingActionButton className={className}>
             {this.props.label}
           </FloatingActionButton>
         </Link>
@@ -71,12 +73,11 @@ var Layout = module.exports = React.createClass({
         <h2 className="text-muted">Insights and trending topics during the #Oscars</h2>
 
         <menu>
-          <MenuItem id="100" insight="" label="Real Time" />
           <MenuItem id="0" insight="top" label="Top" />
           <MenuItem id="1" insight="redcarpet" label="Red Carpet" />
           <MenuItem id="2" insight="actors" label="Actors" />
           <MenuItem id="3" insight="films" label="Films" />
-          <MenuItem id="4" insight="noteworthy" label="Noteworthy" />
+          <MenuItem id="4" insight="dicaprio" label="Leo Di Caprio" />
         </menu>
 
         <div className="row page-main">
@@ -97,6 +98,10 @@ var Layout = module.exports = React.createClass({
 
         <div className="page-more">
           <h3>Read more</h3>
+          <p><a href="https://medium.com/@ecesena/preparing-for-the-oscars-2016-on-twitter-realtime-oscarsdata-4bae4b7736f1" target="_blank">Preparing for the Oscars 2016 on Twitter — #realtime, #oscarsdata</a></p>
+          <p><a href="https://medium.com/@_megangroves/2016-oscars-data-telling-a-story-through-trending-topics-cfbc3e373198" target="_blank">2016 Oscars Data: Telling a Story through Trending Topics</a></p>
+          <p><a href="https://medium.com/@_megangroves/2016-oscars-data-hashtag-observations-37583f1fcce9" target="_blank">2016 Oscars Data: Hashtag Observations</a></p>
+          <p>From last year</p>
           <p><a href="http://ecesena.github.io/oscars2015" target="_blank">Oscars 2015 on Twitter</a></p>
           <p><a href="https://medium.com/@_megangroves/oscars-2015-on-twitter-identifying-trending-topics-fb0a92702352" target="_blank">Identifying Trending Topics (2015)</a></p>
           <p><a href="https://medium.com/@albluca/analyzing-the-oscars-with-google-cloud-dataflow-a71818cb5cb" target="_blank">Analyzing data with Google Cloud Dataflow (2015)</a></p>
@@ -113,11 +118,5 @@ var Layout = module.exports = React.createClass({
   }
 });
 
-            // <div className="col-sm-3 col-md-2 sidebar">
-            //   <Nav ulClassName="nav-sidebar">
-            //     <IndexLinkContainer to="/"><NavItem>Overview</NavItem></IndexLinkContainer>
-            //     <LinkContainer to="/link1"><NavItem>Link1</NavItem></LinkContainer>
-            //     <LinkContainer to="/link2"><NavItem>Link2</NavItem></LinkContainer>
-            //   </Nav>
-            // </div>
-            // <div className="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+// REALTIME
+//          <MenuItem id="100" insight="" label="Real Time" />
